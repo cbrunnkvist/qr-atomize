@@ -1,6 +1,6 @@
 {
   "name": "qr-atomize",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Atomize QR codes to their absolute minimum filesize — 1 pixel per module. Decode and re-render any QR code image (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO) at native resolution. Supports QR codes with embedded logos.",
   "type": "module",
   "main": "./dist/index.js",
