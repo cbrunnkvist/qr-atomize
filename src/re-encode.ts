@@ -6,11 +6,13 @@ export type OutputFormat = 'png' | 'gif';
 export interface ReEncodeOpts {
   border?: number;
   format?: OutputFormat;
+  invert?: boolean;
 }
 
 export function reEncode(data: string, opts?: ReEncodeOpts): Uint8Array {
   const border = opts?.border ?? 2;
   const format = opts?.format ?? 'png';
+  const invert = opts?.invert ?? false;
 
   if (format === 'gif') {
     return encodeQR(data, 'gif', { scale: 1, border });
@@ -24,7 +26,8 @@ export function reEncode(data: string, opts?: ReEncodeOpts): Uint8Array {
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      if (raw[y][x]) {
+      const dark = invert ? !raw[y][x] : raw[y][x];
+      if (dark) {
         packed[y * rowBytes + (x >> 3)] |= 0x80 >> (x & 7);
       }
     }

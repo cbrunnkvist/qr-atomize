@@ -236,3 +236,35 @@ describe('output size', () => {
       `Output (${output.length}) should be <10% of input (${input.length})`);
   });
 });
+
+// ── Polarity / inversion ─────────────────────────────────────────────
+
+describe('polarity', () => {
+  const EXPECTED_TEXT = 'https://example.com';
+
+  function firstBit(pngBuf) {
+    const png = decodePng(pngBuf);
+    const rowBytes = Math.ceil(png.width / 8);
+    return (png.data[0] >> 7) & 1; // bit 0 of row 0 = quiet zone corner
+  }
+
+  it('standard input produces standard output (white corner)', async () => {
+    const output = await atomizeQr(readFileSync(fixture('valid-qr.png')));
+    assert.equal(firstBit(output), 0, 'quiet zone corner should be white (bit 0)');
+  });
+
+  it('inverted input produces inverted output (black corner)', async () => {
+    const output = await atomizeQr(readFileSync(fixture('valid-qr-inverted.png')));
+    assert.equal(firstBit(output), 1, 'quiet zone corner should be black (bit 1)');
+  });
+
+  it('invert: true forces inverted output on standard input', async () => {
+    const output = await atomizeQr(readFileSync(fixture('valid-qr.png')), { invert: true });
+    assert.equal(firstBit(output), 1, 'should be inverted even though input is standard');
+  });
+
+  it('invert: false forces standard output on inverted input', async () => {
+    const output = await atomizeQr(readFileSync(fixture('valid-qr-inverted.png')), { invert: false });
+    assert.equal(firstBit(output), 0, 'should be standard even though input is inverted');
+  });
+});

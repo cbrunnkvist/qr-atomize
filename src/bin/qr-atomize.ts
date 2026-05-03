@@ -17,6 +17,7 @@ Options:
   -o, --output <file>   Output file path (default: <input>-atomized.png)
   -b, --border <n>      Quiet zone in modules (default: 2)
   -f, --format <fmt>    Output format: png (default) or gif
+  -x, --invert          Invert output polarity (swap black/white)
   -h, --help            Show this help
 
 Supported input formats: PNG, JPEG, GIF, WebP, BMP, TIFF, ICO
@@ -28,6 +29,7 @@ let inputPath: string | undefined;
 let outputPath: string | undefined;
 let border: number | undefined;
 let format: 'png' | 'gif' | undefined;
+let invert: boolean | undefined;
 
 for (let i = 0; i < args.length; i++) {
   const arg = args[i];
@@ -42,6 +44,8 @@ for (let i = 0; i < args.length; i++) {
       process.exit(1);
     }
     format = f;
+  } else if (arg === '-x' || arg === '--invert') {
+    invert = true;
   } else if (!arg.startsWith('-')) {
     inputPath = arg;
   }
@@ -56,7 +60,7 @@ const resolvedInput = resolve(inputPath);
 const buf = readFileSync(resolvedInput);
 
 try {
-  const out = await atomizeQr(buf, { border, format });
+  const out = await atomizeQr(buf, { border, format, invert });
 
   if (!outputPath) {
     const ext = extname(resolvedInput);
