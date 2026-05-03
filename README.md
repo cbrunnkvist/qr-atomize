@@ -6,10 +6,7 @@ Takes an oversized QR code (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO), decodes it, a
 
 QR codes with embedded logos are fully supported — the logo overlay is discarded during atomization (error correction handles the missing modules).
 
-```
-input:  qrcode.png  480×480 px  (63 KB)
-output: qrcode.png   25×25 px  (190 bytes)
-```
+[<img src="assets/comparison.png" alt="Left: 290×290 px input (6.9 KB) — Right: 29×29 px atomized output (190 B)" width="692">](test/fixtures/)
 
 ## Install
 
