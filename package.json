@@ -1,0 +1,75 @@
+{
+  "name": "qr-atomize",
+  "version": "1.0.0",
+  "description": "Atomize QR codes to their absolute minimum filesize — 1 pixel per module. Decode and re-render any QR code image (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO) at native resolution. Supports QR codes with embedded logos.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "qr-atomize": "./dist/bin/qr-atomize.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test test/index.test.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "qr",
+    "qr-code",
+    "qrcode",
+    "atomize",
+    "minimize",
+    "shrink",
+    "reduce",
+    "optimize",
+    "compress",
+    "pixel-perfect",
+    "native-resolution",
+    "1x1",
+    "minimum",
+    "filesize",
+    "small",
+    "lossless",
+    "gif",
+    "webp",
+    "logo",
+    "decode",
+    "encode",
+    "re-encode",
+    "re-render",
+    "resize",
+    "bmp",
+    "tiff",
+    "ico",
+    "cross-image"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cbrunnkvist/qr-atomize.git"
+  },
+  "homepage": "https://github.com/cbrunnkvist/qr-atomize#readme",
+  "bugs": {
+    "url": "https://github.com/cbrunnkvist/qr-atomize/issues"
+  },
+  "dependencies": {
+    "@cwasm/webp": "^0.1.5",
+    "cross-image": "^0.4.3",
+    "fast-png": "^8.0.0",
+    "qr": "^0.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.17",
+    "typescript": "^5.9.3"
+  }
+}
