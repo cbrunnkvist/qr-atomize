@@ -6,7 +6,7 @@ Takes an oversized QR code (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO), decodes it, a
 
 QR codes with embedded logos are fully supported — the logo overlay is discarded during atomization (error correction handles the missing modules).
 
-[<img src="assets/comparison.png" alt="Left: 290×290 px input (6.9 KB) — Right: 29×29 px atomized output (190 B)" width="692">](test/fixtures/)
+# ![Left: 290×290 px input (6.9 KB)](test/fixtures/valid-qr.png) → ![test/fixtures/valid-qr-native.png](test/fixtures/valid-qr-native.png)
 
 ## Install
 
@@ -35,6 +35,7 @@ Options:
   -o, --output <file>   Output path (default: <input>-atomized.png)
   -b, --border <n>      Quiet zone in modules (default: 2)
   -f, --format <fmt>    Output format: png (default) or gif
+  -x, --invert          Invert output polarity (swap black/white)
   -h, --help            Show help
 ```
 
@@ -56,6 +57,7 @@ const png = await atomizeQr(readFileSync('qrcode.png'));
 atomizeQr(input: Buffer | string, opts?: {
   border?: number;       // quiet zone in modules (default: 2)
   format?: 'png' | 'gif' // output format (default: 'png')
+  invert?: boolean;      // swap black/white (default: auto-detect from input)
 }): Promise<Buffer>
 ```
 
