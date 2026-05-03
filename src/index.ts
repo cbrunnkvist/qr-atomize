@@ -16,10 +16,9 @@ export interface AtomizeOpts {
   /** Output format: 'png' (1-bit, default) or 'gif' */
   format?: 'png' | 'gif';
   /**
-   * Invert the output polarity (swap black/white).
-   * - undefined (default): auto-detect from input — dark background → inverted output
-   * - true: force inverted output
-   * - false: force standard output
+   * Swap the output polarity relative to the input.
+   * - false/undefined (default): output matches input polarity
+   * - true: flip black ↔ white
    */
   invert?: boolean;
 }
@@ -88,8 +87,8 @@ export default async function atomizeQr(input: Buffer | string, opts?: AtomizeOp
     }
   }
 
-  const invert = opts?.invert ?? hasDarkBackground(image);
-  const out = reEncode(data, { border: opts?.border, format: opts?.format, invert });
+  const shouldInvert = hasDarkBackground(image) !== (opts?.invert ?? false);
+  const out = reEncode(data, { border: opts?.border, format: opts?.format, invert: shouldInvert });
   return Buffer.from(out);
 }
 

@@ -258,13 +258,13 @@ describe('polarity', () => {
     assert.equal(firstBit(output), 1, 'quiet zone corner should be black (bit 1)');
   });
 
-  it('invert: true forces inverted output on standard input', async () => {
-    const output = await atomizeQr(readFileSync(fixture('valid-qr.png')), { invert: true });
-    assert.equal(firstBit(output), 1, 'should be inverted even though input is standard');
+  it('invert: true swaps polarity on inverted input to standard', async () => {
+    const output = await atomizeQr(readFileSync(fixture('valid-qr-inverted.png')), { invert: true });
+    assert.equal(firstBit(output), 0, 'should be standard — inverted input swapped');
   });
 
-  it('invert: false forces standard output on inverted input', async () => {
-    const output = await atomizeQr(readFileSync(fixture('valid-qr-inverted.png')), { invert: false });
-    assert.equal(firstBit(output), 0, 'should be standard even though input is inverted');
+  it('invert: true swaps polarity on standard input to inverted', async () => {
+    const output = await atomizeQr(readFileSync(fixture('valid-qr.png')), { invert: true });
+    assert.equal(firstBit(output), 1, 'should be inverted — standard input swapped');
   });
 });
