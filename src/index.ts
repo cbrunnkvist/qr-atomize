@@ -1,6 +1,12 @@
 import decodeQR from 'qr/decode.js';
+import _jsQR from 'jsqr';
 import { decodeInput } from './decode-input.js';
 import { reEncode } from './re-encode.js';
+import type { Image as QrImage } from 'qr';
+
+type JsQR = (data: Uint8ClampedArray, width: number, height: number, opts?: { inversionAttempts?: string }) => { data: string } | null;
+// jsQR is a UMD bundle; with ESM interop the default lands one level deep.
+const jsQR: JsQR = ((_jsQR as unknown as { default?: JsQR }).default ?? _jsQR) as JsQR;
 
 export type { OutputFormat } from './re-encode.js';
 
@@ -12,6 +18,23 @@ export interface AtomizeOpts {
 }
 
 /**
+ * Attempt to decode a QR image with jsQR as a fallback.
+ * jsQR uses a different detection pipeline (4-corner perspective,
+ * its own binariser) so it can succeed where the `qr` library fails.
+ */
+function decodeWithJsQr(image: QrImage): string | undefined {
+  // jsQR expects Uint8ClampedArray RGBA data
+  const raw = image.data;
+  const clamped = raw instanceof Uint8ClampedArray
+    ? raw
+    : raw instanceof Uint8Array
+      ? new Uint8ClampedArray(raw.buffer, raw.byteOffset, raw.byteLength)
+      : new Uint8ClampedArray(raw);
+  const result = jsQR(clamped, image.width, image.height, { inversionAttempts: 'attemptBoth' });
+  return result?.data;
+}
+
+/**
  * Decode a QR code image and re-render it at 1 pixel per module.
  *
  * @param input - Buffer or file path to a QR code image (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO)
@@ -20,7 +43,21 @@ export interface AtomizeOpts {
  */
 export default async function atomizeQr(input: Buffer | string, opts?: AtomizeOpts): Promise<Buffer> {
   const image = await decodeInput(input);
-  const data = decodeQR(image);
+
+  let data: string;
+  try {
+    data = decodeQR(image);
+  } catch {
+    // Primary decoder failed — fall back to jsQR
+    const fallback = decodeWithJsQr(image);
+    if (fallback === undefined) {
+      // Re-throw the original error if jsQR also couldn't decode
+      data = decodeQR(image);
+    } else {
+      data = fallback;
+    }
+  }
+
   const out = reEncode(data, { border: opts?.border, format: opts?.format });
   return Buffer.from(out);
 }

@@ -115,6 +115,37 @@ describe('WebP with embedded logo', () => {
   });
 });
 
+// ── macOS screenshot with surrounding browser chrome ─────────────────
+
+describe('macOS screenshot with browser chrome', () => {
+  const NANO_ADDRESS = 'nano:nano_1q7th5gr198u7on36jgg9ocebmu69ssaqb4qj1h3rdu4q76wmmepqbfjmkg3';
+
+  it('decodes QR from macOS screenshot via jsQR fallback', async () => {
+    const result = await atomizeQr(readFileSync(fixture('macos-screenshot-with-test.png')));
+    const png = decodePng(result);
+    assert.equal(png.depth, 1);
+    assert.ok(png.width > 0 && png.height > 0, 'should have non-zero dimensions');
+  });
+
+  it('produces a pixel-accurate 1-bit PNG encoding the nano address', async () => {
+    const result = await atomizeQr(readFileSync(fixture('macos-screenshot-with-test.png')));
+    const png = decodePng(result);
+    assert.equal(png.depth, 1);
+    // Re-encode the expected payload and compare grid dimensions
+    const grid = getModuleGrid(NANO_ADDRESS, 2);
+    assert.equal(png.width, grid.width, 'width should match nano address QR version');
+    assert.equal(png.height, grid.height, 'height should match nano address QR version');
+    assertPngPixelsMatchGrid(png, grid);
+  });
+
+  it('atomized screenshot is much smaller than input', async () => {
+    const input = readFileSync(fixture('macos-screenshot-with-test.png'));
+    const output = await atomizeQr(input);
+    assert.ok(output.length < input.length / 10,
+      `Output (${output.length}) should be <10% of input (${input.length})`);
+  });
+});
+
 // ── Output format options ─────────────────────────────────────────────
 
 describe('output formats', () => {

@@ -66,6 +66,7 @@
     "@cwasm/webp": "^0.1.5",
     "cross-image": "^0.4.3",
     "fast-png": "^8.0.0",
+    "jsqr": "^1.4.0",
     "qr": "^0.6.0"
   },
   "devDependencies": {
