@@ -1,12 +1,12 @@
 # qr-atomize
 
-Atomize any QR code image to its **absolute minimum filesize** — 1 pixel per module.
+Atomize any QR code image to its **absolute minimum filesize** — 1 pixel per module (without resampling fuzziness or subpixel-rendering issues).
 
 Takes an oversized QR code (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO), decodes it, and re-renders it at native resolution where each symbol module is exactly 1 pixel. Output is a **1-bit PNG** (or optionally GIF).
 
 QR codes with embedded logos are fully supported — the logo overlay is discarded during atomization (error correction handles the missing modules).
 
-# ![Left: 290×290 px input (6.9 KB)](test/fixtures/valid-qr.png) → ![test/fixtures/valid-qr-native.png](test/fixtures/valid-qr-native.png)
+# ![Left: 290×290 px input (6.9 KB)](test/fixtures/valid-qr.png) → ![Right: 290x290 px output (188 bytes)](test/fixtures/valid-qr-atomized.png)
 
 ## Install
 
