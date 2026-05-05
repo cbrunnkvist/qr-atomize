@@ -24,7 +24,7 @@ function assertPngPixelsMatchGrid(pngData, expected) {
     for (let x = 0; x < width; x++) {
       const byteIdx = y * rowBytes + (x >> 3);
       const bitIdx = 7 - (x & 7);
-      const pixelBlack = ((data[byteIdx] >> bitIdx) & 1) === 1;
+      const pixelBlack = ((data[byteIdx] >> bitIdx) & 1) === 0;
       const expectedBlack = expected.get(x, y);
       assert.equal(pixelBlack, expectedBlack, `Pixel mismatch at (${x},${y})`);
     }
@@ -71,6 +71,15 @@ describe('valid QR fixtures', () => {
 
   it('atomizes valid-qr.bmp', async () => {
     const result = await atomizeQr(readFileSync(fixture('valid-qr.bmp')));
+    const png = decodePng(result);
+    assert.equal(png.width, EXPECTED_GRID.width);
+    assert.equal(png.height, EXPECTED_GRID.height);
+    assert.equal(png.depth, 1);
+    assertPngPixelsMatchGrid(png, EXPECTED_GRID);
+  });
+
+  it('atomizes damaged-qr.png', async () => {
+    const result = await atomizeQr(readFileSync(fixture('damaged-qr.png')));
     const png = decodePng(result);
     assert.equal(png.width, EXPECTED_GRID.width);
     assert.equal(png.height, EXPECTED_GRID.height);
@@ -144,9 +153,18 @@ describe('macOS screenshot with browser chrome', () => {
     assert.ok(output.length < input.length / 10,
       `Output (${output.length}) should be <10% of input (${input.length})`);
   });
-});
+  });
 
-// ── Output format options ─────────────────────────────────────────────
+  // ── Atomization verification ──────────────────────────────────────────
+
+  it('atomizing valid-qr.png produces valid-qr-atomized.png', async () => {
+    const input = readFileSync(fixture('valid-qr.png'));
+    const atomized = await atomizeQr(input);
+    const expected = readFileSync(fixture('valid-qr-atomized.png'));
+    assert.deepEqual(atomized, expected);
+  });
+
+  // ── Output format options ─────────────────────────────────────────────
 
 describe('output formats', () => {
   it('default output is 1-bit PNG', async () => {
@@ -250,21 +268,21 @@ describe('polarity', () => {
 
   it('standard input produces standard output (white corner)', async () => {
     const output = await atomizeQr(readFileSync(fixture('valid-qr.png')));
-    assert.equal(firstBit(output), 0, 'quiet zone corner should be white (bit 0)');
+    assert.equal(firstBit(output), 1, 'quiet zone corner should be white (bit 1)');
   });
 
   it('inverted input produces inverted output (black corner)', async () => {
     const output = await atomizeQr(readFileSync(fixture('valid-qr-inverted.png')));
-    assert.equal(firstBit(output), 1, 'quiet zone corner should be black (bit 1)');
+    assert.equal(firstBit(output), 0, 'quiet zone corner should be black (bit 0)');
   });
 
   it('invert: true swaps polarity on inverted input to standard', async () => {
     const output = await atomizeQr(readFileSync(fixture('valid-qr-inverted.png')), { invert: true });
-    assert.equal(firstBit(output), 0, 'should be standard — inverted input swapped');
+    assert.equal(firstBit(output), 1, 'should be standard — inverted input swapped');
   });
 
   it('invert: true swaps polarity on standard input to inverted', async () => {
     const output = await atomizeQr(readFileSync(fixture('valid-qr.png')), { invert: true });
-    assert.equal(firstBit(output), 1, 'should be inverted — standard input swapped');
+    assert.equal(firstBit(output), 0, 'should be inverted — standard input swapped');
   });
 });

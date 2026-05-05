@@ -27,7 +27,7 @@ export function reEncode(data: string, opts?: ReEncodeOpts): Uint8Array {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const dark = invert ? !raw[y][x] : raw[y][x];
-      if (dark) {
+      if (!dark) {
         packed[y * rowBytes + (x >> 3)] |= 0x80 >> (x & 7);
       }
     }
