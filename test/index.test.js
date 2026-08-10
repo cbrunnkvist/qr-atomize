@@ -286,3 +286,48 @@ describe('polarity', () => {
     assert.equal(firstBit(output), 0, 'should be inverted — standard input swapped');
   });
 });
+
+// ── Text mode (--text) ────────────────────────────────────────────────
+
+describe('text mode', () => {
+  it('generates a pixel-accurate 1-bit PNG from text', async () => {
+    const result = await atomizeQr('', { text: 'https://example.com' });
+    assert.ok(Buffer.isBuffer(result));
+    assert.equal(result[0], 0x89, 'default output should be PNG');
+    const png = decodePng(result);
+    assert.equal(png.depth, 1);
+    const grid = getModuleGrid('https://example.com', 2);
+    assert.equal(png.width, grid.width);
+    assert.equal(png.height, grid.height);
+    assertPngPixelsMatchGrid(png, grid);
+  });
+
+  it('text mode: format gif produces a valid GIF', async () => {
+    const result = await atomizeQr('', { text: 'https://example.com', format: 'gif' });
+    assert.equal(result[0], 0x47); // 'G'
+    const { width, height } = await gifToPixels(result);
+    const grid = getModuleGrid('https://example.com', 2);
+    assert.equal(width, grid.width);
+    assert.equal(height, grid.height);
+  });
+
+  it('text mode: UTF-8 input', async () => {
+    const result = await atomizeQr('', { text: 'Hello 🌍 你好' });
+    assert.ok(Buffer.isBuffer(result));
+    assert.ok(result.length > 0);
+  });
+
+  it('text mode: honors border option', async () => {
+    const result = await atomizeQr('', { text: 'border-check', border: 4 });
+    const png = decodePng(result);
+    assert.equal(png.width, getModuleGrid('border-check', 4).width);
+  });
+
+  it('text mode: text wins over input argument', async () => {
+    const result = await atomizeQr(readFileSync(fixture('valid-qr.gif')), { text: 'text-wins' });
+    const png = decodePng(result);
+    const grid = getModuleGrid('text-wins', 2);
+    assert.equal(png.width, grid.width);
+    assertPngPixelsMatchGrid(png, grid);
+  });
+});

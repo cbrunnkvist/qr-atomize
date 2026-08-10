@@ -31,13 +31,22 @@ qr-atomize input.png
 qr-atomize input.jpg -o tiny.png
 qr-atomize input.gif --border 0 --format gif
 qr-atomize input.bmp
+
+# generate directly from text (no image needed)
+qr-atomize -t "https://example.com"
+qr-atomize --text "Hello 🌍" -o hello.png
 ```
 
 ```
 qr-atomize <input> [options]
+qr-atomize -t, --text <content> [options]
+
+Modes:
+  <input>                 Re-encode an existing QR code image
+  -t, --text <content>    Generate from text (UTF-8 supported)
 
 Options:
-  -o, --output <file>   Output path (default: <input>-atomized.png)
+  -o, --output <file>   Output path (default: <input>-atomized.png or qr-atomized.png)
   -b, --border <n>      Quiet zone in modules (default: 2)
   -f, --format <fmt>    Output format: png (default) or gif
   -x, --invert          Invert output polarity (swap black/white)
@@ -63,11 +72,19 @@ atomizeQr(input: Buffer | string, opts?: {
   border?: number;       // quiet zone in modules (default: 2)
   format?: 'png' | 'gif' // output format (default: 'png')
   invert?: boolean;      // swap black/white (default: auto-detect from input)
+  text?: string;         // generate from text instead of decoding an image
 }): Promise<Buffer>
 ```
 
-- **input** — image buffer or file path (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO)
+- **input** — image buffer or file path (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO). Ignored when `opts.text` is set.
 - **returns** — `Promise<Buffer>` containing the atomized image
+
+Generate a QR code directly from text (no image required):
+
+```js
+const png = await atomizeQr('', { text: 'https://example.com' });
+const gif = await atomizeQr('', { text: 'Hello 🌍', format: 'gif' });
+```
 
 > **Note:** `atomizeQr` is async (returns a Promise) because image decoding uses async operations internally.
 

@@ -12,9 +12,14 @@ qr-atomize — Reduce any QR code to 1 pixel per module
 
 Usage:
   qr-atomize <input> [options]
+  qr-atomize -t, --text <content> [options]
+
+Modes:
+  <input>                 Re-encode an existing QR code image
+  -t, --text <content>    Generate from text (UTF-8 supported)
 
 Options:
-  -o, --output <file>   Output file path (default: <input>-atomized.png)
+  -o, --output <file>   Output file path (default: <input>-atomized.png or qr-atomized.png)
   -b, --border <n>      Quiet zone in modules (default: 2)
   -f, --format <fmt>    Output format: png (default) or gif
   -x, --invert          Invert output polarity (swap black/white)
@@ -26,6 +31,7 @@ Supported input formats: PNG, JPEG, GIF, WebP, BMP, TIFF, ICO
 }
 
 let inputPath: string | undefined;
+let text: string | undefined;
 let outputPath: string | undefined;
 let border: number | undefined;
 let format: 'png' | 'gif' | undefined;
@@ -46,27 +52,38 @@ for (let i = 0; i < args.length; i++) {
     format = f;
   } else if (arg === '-x' || arg === '--invert') {
     invert = true;
+  } else if (arg === '-t' || arg === '--text') {
+    text = args[++i];
   } else if (!arg.startsWith('-')) {
     inputPath = arg;
   }
 }
 
-if (!inputPath) {
-  console.error('Error: No input file specified.');
+if (text !== undefined && inputPath !== undefined) {
+  console.error('Error: --text and <input> are mutually exclusive.');
   process.exit(1);
 }
 
-const resolvedInput = resolve(inputPath);
-const buf = readFileSync(resolvedInput);
+if (text === undefined && inputPath === undefined) {
+  console.error('Error: No input file or --text content specified.');
+  process.exit(1);
+}
+
+const outExt = format === 'gif' ? '.gif' : '.png';
 
 try {
-  const out = await atomizeQr(buf, { border, format, invert });
+  const input = inputPath !== undefined ? readFileSync(resolve(inputPath)) : '';
+  const out = await atomizeQr(input, { text, border, format, invert });
 
   if (!outputPath) {
-    const ext = extname(resolvedInput);
-    const base = basename(resolvedInput, ext);
-    const outExt = format === 'gif' ? '.gif' : '.png';
-    outputPath = resolve(`${base}-atomized${outExt}`);
+    if (inputPath !== undefined) {
+      const resolvedInput = resolve(inputPath);
+      const ext = extname(resolvedInput);
+      const base = basename(resolvedInput, ext);
+      outputPath = resolve(`${base}-atomized${outExt}`);
+    } else {
+      outputPath = resolve(`qr-atomized${outExt}`);
+    }
   } else {
     outputPath = resolve(outputPath);
   }

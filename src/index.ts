@@ -21,6 +21,11 @@ export interface AtomizeOpts {
    * - true: flip black ↔ white
    */
   invert?: boolean;
+  /**
+   * Generate a QR code directly from text (UTF-8 supported) instead of
+   * decoding an input image. When set, `input` is ignored.
+   */
+  text?: string;
 }
 
 /**
@@ -71,6 +76,11 @@ function hasDarkBackground(image: QrImage): boolean {
  * @returns Buffer of the atomized QR code (1 pixel per module)
  */
 export default async function atomizeQr(input: Buffer | string, opts?: AtomizeOpts): Promise<Buffer> {
+  if (opts?.text !== undefined) {
+    const out = reEncode(opts.text, { border: opts.border, format: opts.format, invert: opts.invert });
+    return Buffer.from(out);
+  }
+
   const image = await decodeInput(input);
 
   let data: string;
