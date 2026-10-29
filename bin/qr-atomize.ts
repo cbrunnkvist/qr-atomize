@@ -1,11 +1,12 @@
 #!/usr/bin/env node
+import { parseArgs } from 'node:util';
 import { writeFile } from 'fs/promises';
 import { basename, extname } from 'path';
 import atomizeQr from '../src/index.js';
 
 const args = process.argv.slice(2);
 
-if (args.length === 0 || args.includes('--help') || args.includes('-h')) {
+function showHelp(): never {
   console.log(`Usage: qr-atomize <input> [options]
        qr-atomize --text <content> [options]
 
@@ -23,29 +24,40 @@ Options:
   process.exit(0);
 }
 
+if (args.length === 0) showHelp();
+
 let input: string | undefined;
 let text: string | undefined;
 let output: string | undefined;
 let border = 2;
 let quiet = false;
 
-for (let i = 0; i < args.length; i++) {
-  const arg = args[i];
-  if ((arg === '-o' || arg === '--output') && args[i + 1]) {
-    output = args[++i];
-  } else if ((arg === '-b' || arg === '--border') && args[i + 1]) {
-    border = parseInt(args[++i], 10);
-    if (isNaN(border)) {
-      console.error('Error: --border must be a number');
-      process.exit(1);
+try {
+  const parsed = parseArgs({ args, strict: true, allowPositionals: true, options: {
+    output: { type: 'string', short: 'o' }, border: { type: 'string', short: 'b' },
+    text: { type: 'string', short: 't' }, quiet: { type: 'boolean', short: 'q' },
+    help: { type: 'boolean', short: 'h' },
+  }, tokens: true });
+  if (parsed.values.help) showHelp();
+  for (const name of ['output', 'border', 'text']) {
+    if (parsed.tokens.filter(token => token.kind === 'option' && token.name === name).length > 1) {
+      throw new Error(`--${name} may only be provided once`);
     }
-  } else if (arg === '-q' || arg === '--quiet') {
-    quiet = true;
-  } else if ((arg === '-t' || arg === '--text') && args[i + 1]) {
-    text = args[++i];
-  } else if (!arg.startsWith('-')) {
-    input = arg;
   }
+  if (parsed.positionals.length > 1) throw new Error('Provide only one input file');
+  input = parsed.positionals[0];
+  text = parsed.values.text;
+  output = parsed.values.output;
+  if (output === '') throw new Error('--output requires a nonempty path');
+  quiet = parsed.values.quiet ?? false;
+  if (parsed.values.border !== undefined) {
+    if (!/^-?\d+$/.test(parsed.values.border)) throw new Error('--border must be an integer');
+    border = Number(parsed.values.border);
+    if (!Number.isSafeInteger(border)) throw new Error('--border must be a safe integer');
+  }
+} catch (error) {
+  console.error(`Error: ${error instanceof Error ? error.message : error}`);
+  process.exit(1);
 }
 
 if (text !== undefined && input !== undefined) {
