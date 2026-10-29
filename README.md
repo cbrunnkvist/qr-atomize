@@ -2,7 +2,7 @@
 
 Atomize any QR code image — 1 pixel per module.
 
-Takes a QR code image (PNG, JPEG, GIF, WebP, BMP) and returns the same QR code re-rendered at **1 pixel per module** (plus a configurable quiet zone). The output is a GIF (the smallest lossless format for 1-bit data).
+Takes a QR code image (PNG, JPEG, GIF, WebP, BMP) and returns the same QR code re-rendered at **1 pixel per module** (plus a configurable quiet zone). The output is a GIF.
 
 ## Install
 
@@ -66,3 +66,17 @@ This is **not** an image resizer. It's a decode-and-remint operation.
 ## License
 
 MIT
+
+## Text and decoding limits
+
+Generate directly with `atomizeQr('', { text: 'Hello 🌍' })` or
+`qr-atomize --text 'Hello 🌍'`. Image inputs must contain supported UTF-8 text.
+Unmarked byte segments are assumed to be UTF-8; invalid UTF-8 and explicit
+non-UTF-8 ECI encodings fail rather than silently changing the text. Arbitrary
+binary payloads are unsupported. Re-encoding preserves text, not the original
+module pattern or encoding metadata.
+
+Encoding tries medium error correction, then low if the payload exceeds medium
+capacity. Output uses one pixel per module. The compact default border is two;
+use `border: 4` (CLI `--border 4`) for a standards-conformant quiet zone.
+GIF is the supported bitmap output; PNG or lossless WebP can be smaller.
