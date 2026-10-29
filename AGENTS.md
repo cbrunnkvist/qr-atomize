@@ -1,52 +1,32 @@
 # AGENTS.md
 
-## Build & test
+## Build and tests
 
-Tests import from `../dist/index.js` (built output), not source. Always build before testing:
+Run `npm test`: it builds with TypeScript and runs both `test/index.test.js`
+(historical fixture tests) and the compiled `test/index.test.ts` regression suite.
+No linter is configured.
 
-```bash
-npm run build && npm test
-```
+## Architecture
 
-No separate typecheck script — `tsc` (build) emits declarations and checks types. No linter configured.
+`src/index.ts` exposes the API. `bin/qr-atomize.ts` is the canonical CLI;
+`src/bin/qr-atomize.ts` forwards to it for source-path compatibility.
+Built API files are under `dist/src/`; built CLI files are under `dist/bin/`.
 
-## Decoder architecture
+PNG (packed 1-bit grayscale) is the default; GIF and raw matrices are API options.
+PNG uses fast-png. The qr encoder provides module matrices, trying medium error
+correction first and low only on capacity overflow. Input polarity is preserved;
+`invert` swaps it. The compact default border is two; four is standards-conformant.
 
-The `qr` library (v0.6.0) is the primary decoder. It has known failures on certain valid QR codes — e.g. macOS screenshots with surrounding browser chrome, where its alignment-pattern detection produces a wrong perspective transform and all 32 ECC/mask combos fail RS decode.
-
-`jsqr` is a runtime dependency used as a **fallback decoder** in `src/index.ts`. It uses a different detection pipeline (4-corner perspective, its own binarizer). The fallback is silent — it only activates when the primary decoder throws.
-
-When adding new test fixtures that fail with `RS.decode: invalid errors number`, the fix is usually "this image needs the jsQR fallback path," not a bug in the `qr` library's Reed-Solomon math.
-
-## jsQR ESM interop
-
-`jsqr` is a UMD bundle. With `module: "Node16"` + `esModuleInterop`, the default import wraps the function one level deep. The unwrap in `src/index.ts` is intentional — do not simplify it without testing.
-
-## Test framework
-
-Tests use Node.js built-in `node:test` runner (`describe`/`it`), not jest/vitest/mocha. The test file is plain ESM JavaScript (`test/index.test.js`), not TypeScript.
-
-Run a single describe block:
-```bash
-node --test test/index.test.js --test-name-pattern "macOS screenshot"
-```
-
-## Fixtures
-
-`test/fixtures/` contains valid QR images, WebP with embedded logo, a macOS screenshot (exercises jsQR fallback), and several GIGO cases (damaged, noise, empty, truncated, fake). The GIGO tests assert specific error patterns (`/Finder/`) — if you change error messages, update the matchers.
-
-## Image decoding pipeline
-
-`cross-image` handles PNG/JPEG/GIF/BMP/TIFF/ICO. WebP falls back to `@cwasm/webp` (native WASM) — see `src/decode-input.ts`. The fallback triggers on error messages containing `WebP` or `VP8L`.
+`decodeInput` decodes and prepares RGBA images, composites alpha onto white, and
+upscales small inputs using nearest-neighbor. Packed 1-bit grayscale PNG needs
+explicit unpacking because cross-image misreads it. WebP has an @cwasm/webp fallback.
+`readQr` tries qr then jsQR (needed for the screenshot/logo fixtures). Strict UTF-8
+validation applies to both decoders; unsupported encoding errors must not fall
+through to another decoder and silently corrupt data. jsQR requires the existing
+ESM/UMD unwrap under Node16 module resolution.
 
 ## Publishing
 
-Uses npm OIDC trusted publishing — **no `NPM_TOKEN` secret**. Requires:
-- `actions/checkout@v6` and `actions/setup-node@v6` (v4 does not work with OIDC)
-- `id-token: write` permission
-- `--provenance` flag on `npm publish`
-- Package linked to GitHub repo at npmjs.com/settings under "Publishing access"
-
-Release flow: `npm version patch && git push --tags` triggers the publish workflow via `on: push: tags: v*`. The workflow verifies the tag matches `package.json` version before publishing.
-
-CI runs on every push to any branch (`ci.yml`).
+Existing tags and merges must be preserved. The publish workflow checks out the
+selected tag and uses npm OIDC with provenance. A tag already pushed must not be
+moved to a later reconciliation commit; use a new version for a subsequent release.

@@ -7,7 +7,7 @@ import encodeQR from 'qr';
 import { Bitmap } from 'qr';
 import { decode as decodePng } from 'fast-png';
 import { Image } from 'cross-image';
-import atomizeQr from '../dist/index.js';
+import atomizeQr from '../dist/src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixture = (name) => join(__dirname, 'fixtures', name);
@@ -196,21 +196,21 @@ describe('invalid inputs (GIGO rejection)', () => {
   it('throws on damaged QR (all finder patterns corrupted)', async () => {
     await assert.rejects(
       () => atomizeQr(readFileSync(fixture('damaged-qr-all-finders.png'))),
-      /Finder/
+      /decodable QR code/
     );
   });
 
   it('throws on solid white image (no QR)', async () => {
     await assert.rejects(
       () => atomizeQr(readFileSync(fixture('not-a-qr.png'))),
-      /Finder/
+      /decodable QR code/
     );
   });
 
   it('throws on random noise image', async () => {
     await assert.rejects(
       () => atomizeQr(readFileSync(fixture('noise.png'))),
-      /Finder/
+      /decodable QR code/
     );
   });
 

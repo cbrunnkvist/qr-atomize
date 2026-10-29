@@ -1,7 +1,7 @@
 {
   "name": "qr-atomize",
   "version": "1.4.1",
-  "description": "Atomize any QR code image — 1 pixel per module.",
+  "description": "Atomize any QR code image \u2014 1 pixel per module.",
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "tsc && node dist/test/index.test.js",
+    "test": "tsc && node --test dist/test/index.test.js test/index.test.js",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -31,7 +31,10 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@cwasm/webp": "^0.1.5",
     "cross-image": "^0.4.3",
+    "fast-png": "^8.0.0",
+    "jsqr": "^1.4.0",
     "qr": "^0.6.0"
   },
   "devDependencies": {
