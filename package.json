@@ -40,5 +40,16 @@
   "devDependencies": {
     "@types/node": "^25.6.0",
     "typescript": "^6.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cbrunnkvist/qr-atomize.git"
+  },
+  "homepage": "https://github.com/cbrunnkvist/qr-atomize#readme",
+  "bugs": {
+    "url": "https://github.com/cbrunnkvist/qr-atomize/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
