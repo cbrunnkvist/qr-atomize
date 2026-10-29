@@ -8,28 +8,15 @@ export interface AtomizeOpts {
   text?: string;
 }
 
-export default async function atomizeQr(
-  input: Buffer | string,
-  opts?: AtomizeOpts
-): Promise<Buffer | boolean[][]> {
+export default function atomizeQr(input: Buffer | string, opts?: AtomizeOpts & { format?: 'gif' }): Promise<Buffer>;
+export default function atomizeQr(input: Buffer | string, opts: AtomizeOpts & { format: 'raw' }): Promise<boolean[][]>;
+export default function atomizeQr(input: Buffer | string, opts: AtomizeOpts): Promise<Buffer | boolean[][]>;
+export default async function atomizeQr(input: Buffer | string, opts?: AtomizeOpts): Promise<Buffer | boolean[][]> {
   const border = Math.max(1, opts?.border ?? 2);
   const format = opts?.format ?? 'gif';
-
-  if (opts?.text !== undefined) {
-    const { default: encodeQR } = await import('qr');
-    if (format === 'raw') {
-      return encodeQR(opts.text, 'raw', { scale: 1, border });
-    }
-    return Buffer.from(encodeQR(opts.text, 'gif', { scale: 1, border }));
-  }
-
-  const buf = typeof input === 'string' ? await readFile(input) : input;
-  const data = await decodeInput(buf);
-
-  if (format === 'raw') {
-    const { default: encodeQR } = await import('qr');
-    return encodeQR(data, 'raw', { scale: 1, border });
-  }
-
-  return Buffer.from(reEncode(data, border));
+  const data = opts?.text !== undefined
+    ? opts.text
+    : await decodeInput(typeof input === 'string' ? await readFile(input) : input);
+  const result = reEncode(data, border, format);
+  return format === 'raw' ? result as boolean[][] : Buffer.from(result as Uint8Array);
 }
