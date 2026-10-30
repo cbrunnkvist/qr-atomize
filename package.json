@@ -1,7 +1,7 @@
 {
   "name": "qr-atomize",
-  "version": "1.4.1",
-  "description": "Atomize any QR code image \u2014 1 pixel per module.",
+  "version": "1.4.2",
+  "description": "Atomize any QR code image — 1 pixel per module.",
   "type": "module",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
