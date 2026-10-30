@@ -1,91 +1,175 @@
 # qr-atomize
 
-Atomize any QR code image — 1 pixel per module.
+Shrink oversized QR code images to **1 pixel per module** — without resampling fuzziness or subpixel-rendering issues.
 
-Takes a QR code image (PNG, JPEG, GIF, WebP, BMP) and returns the same QR code re-rendered at **1 pixel per module** (plus a configurable quiet zone). The default output is a compact 1-bit PNG; GIF and raw matrices are also available.
+Takes an oversized QR code (PNG, JPEG, GIF, WebP, BMP, TIFF, ICO), decodes it, and re-renders it at native resolution where each symbol module is exactly 1 pixel. Output is a compact **1-bit PNG** by default, with GIF and raw matrices available as options.
+
+QR codes with embedded logos are supported when the payload can be recovered through error correction. The logo overlay is discarded during atomization, leaving a clean QR code.
+
+# Example
+
+| Input | Output |
+|:-----:|:------:|
+| ![290×290 px input (6.9 KB)](test/fixtures/valid-qr.png) | ![29×29 px output (197 B)](test/fixtures/valid-qr-atomized.png) |
+| 290×290 px input (6.9 KB) | 29×29 px output (197 B) — _97% reduction!_ |
+
+The example above uses the included fixtures: 6,934 bytes → 197 bytes, about **35× smaller** and **10× smaller in each dimension**. Sizes and savings depend on the input image and payload.
 
 ## Install
 
 ```bash
-npm install qr-atomize
+npm install qr-atomize          # as a dependency
+npm install -g qr-atomize       # globally for CLI use
 ```
 
-## Usage
+## CLI
+
+```bash
+# npx (no install needed)
+npx qr-atomize input.png
+
+# global install
+qr-atomize input.png
+qr-atomize input.jpg -o tiny.png
+qr-atomize input.gif --border 4 --format gif
+qr-atomize input.bmp
+
+# generate directly from text (no image needed)
+qr-atomize -t "https://example.com"
+qr-atomize --text "Hello 🌍" -o hello.png
+
+# advanced output options
+qr-atomize input.png --invert
+qr-atomize input.png --format raw -o modules.json
+qr-atomize input.png --quiet
+```
+
+```text
+qr-atomize <input> [options]
+qr-atomize -t, --text <content> [options]
+
+Modes:
+  <input>                 Re-encode an existing QR code image
+  -t, --text <content>    Generate from text (UTF-8 supported)
+
+Options:
+  -o, --output <file>   Output path (default: <input>-atomized.png or qr-atomized.png)
+  -b, --border <n>      Quiet zone in modules (default: 2, minimum: 1)
+  -f, --format <fmt>    Output format: png (default), gif, or raw (JSON)
+  -x, --invert          Swap output polarity relative to the input
+  -q, --quiet           Suppress non-error output
+  -h, --help            Show help
+```
+
+The default output extension follows the selected format: `.png`, `.gif`, or `.json`. File input and `--text` are mutually exclusive. Use `--border 4` for a standards-conformant quiet zone; the default of two keeps the image compact.
+
+## Library
+
+```js
+// ESM
+import atomizeQr from 'qr-atomize';
+import { writeFile } from 'node:fs/promises';
+
+const png = await atomizeQr('qrcode.png');
+await writeFile('tiny.png', png);
+```
+
+```js
+// CommonJS: dynamic import works from a .cjs file
+async function main() {
+  const { default: atomizeQr } = await import('qr-atomize');
+  const { writeFile } = require('node:fs/promises');
+  const png = await atomizeQr('qrcode.png');
+  await writeFile('tiny.png', png);
+}
+main().catch(console.error);
+```
 
 ### API
 
 ```ts
-import atomizeQr from 'qr-atomize';
-
-// From file path
-const png = await atomizeQr('qrcode.png');
-
-// From buffer
-const png = await atomizeQr(buffer);
-
-// With options
-const png = await atomizeQr('qrcode.png', { border: 4 });
-
-// Raw 2D boolean array
-const raw = await atomizeQr('qrcode.png', { format: 'raw' });
+atomizeQr(input: Buffer | string, opts?: {
+  border?: number;                  // quiet zone (default: 2, minimum: 1)
+  format?: 'png' | 'gif' | 'raw';    // default: 'png'
+  invert?: boolean;                 // swap output polarity relative to input
+  text?: string;                    // generate from text instead of an image
+}): Promise<Buffer | boolean[][]>
 ```
 
-### CLI
+- **input** — image buffer or file path. Ignored when `opts.text` is set.
+- **returns** — a `Buffer` for PNG/GIF, or a 2D boolean matrix for `raw`. TypeScript overloads narrow the result for a literal format.
+- **polarity** — output matches the input by default; `invert: true` swaps black and white. Text generation uses standard black-on-white output unless inverted.
 
-```bash
-npx qr-atomize input.png -o output.png
-npx qr-atomize input.jpg --border 4
-npx qr-atomize input.gif --quiet
+Generate a QR code directly from text (no image required):
+
+```js
+const png = await atomizeQr('', { text: 'https://example.com' });
+const gif = await atomizeQr('', { text: 'Hello 🌍', format: 'gif' });
 ```
 
-## API
+Use a buffer, adjust the border, or get the raw module matrix:
 
-### `atomizeQr(input, opts?)`
+```js
+import { readFile } from 'node:fs/promises';
 
-**Parameters:**
+const png = await atomizeQr(await readFile('qrcode.png'), { border: 4 });
+const inverted = await atomizeQr('qrcode.png', { invert: true });
+const modules = await atomizeQr('qrcode.png', { format: 'raw' });
+// modules[y][x] is true for a dark output pixel, including the border.
+```
 
-- `input` — `Buffer | string` — Image buffer or file path
-- `opts.border` — `number` — Quiet zone in modules (default: 2, minimum: 1)
-- `opts.format` — `'png' | 'gif' | 'raw'` — Output format (default: `'png'`)
+`atomizeQr` is async and always returns a Promise.
 
-**Returns:** `Promise<Buffer>` (PNG/GIF) or `Promise<boolean[][]>` (raw)
+### Sub-module exports
+
+```js
+import { decodeInput, reEncode } from 'qr-atomize';
+
+const image = await decodeInput('qrcode.png');
+// { width, height, data }: prepared RGBA image data
+
+const png = reEncode('https://example.com', { border: 4, format: 'png' });
+// Uint8Array for PNG/GIF; boolean[][] for format: 'raw'
+```
+
+`decodeInput` prepares pixels for QR detection, including transparency compositing and enlargement of small images. `reEncode` renders text and accepts `border`, `format`, and `invert` options.
 
 ## How it works
 
-1. **Decode** the input image using `cross-image` (pure JS, no native deps)
-2. **Read** the QR code data using `qr` (0-dependency QR decoder with perspective correction)
-3. **Re-encode** the data at scale=1 using `qr` → produces a 1-bit PNG by default where each module is exactly 1 pixel
+1. **Decode** the input image to RGBA pixels, composite transparency onto white, and enlarge small inputs for detection when needed.
+2. **Parse** the QR code using finder-pattern detection and error correction, with jsQR as a fallback for difficult images.
+3. **Re-encode** the decoded text at `scale: 1` as a 1-bit PNG, GIF, or raw matrix, with a configurable quiet zone.
 
-This is **not** an image resizer. It's a decode-and-remint operation.
+This is **not** a resizer — it's a decode-and-remint operation. Each output module occupies exactly one pixel, so the result has crisp edges rather than interpolated blur. The text is preserved; the original module pattern, logo overlay, and encoding metadata are not.
+
+PNG is the default because it was consistently smaller than this GIF encoder in our measurements. Lossless WebP was smaller still in the samples, but is currently supported as input only. See the [format size research](docs/research-notes.md) for measurements and their limits.
+
+## Supported input formats
+
+| Format | Extension |
+|--------|-----------|
+| PNG    | `.png`    |
+| JPEG   | `.jpg`, `.jpeg` |
+| GIF    | `.gif`    |
+| WebP   | `.webp`   |
+| BMP    | `.bmp`    |
+| TIFF   | `.tiff`, `.tif` |
+| ICO    | `.ico`    |
+
+## Text and decoding limits
+
+Image inputs must contain supported UTF-8 text. Unmarked byte segments are assumed to be UTF-8; invalid UTF-8 and explicit non-UTF-8 ECI encodings fail rather than silently changing the text. Arbitrary binary payloads are unsupported. Recovery from logos or damage depends on the image and its remaining error correction capacity.
+
+Encoding tries medium error correction, then low if the payload exceeds medium capacity. If neither level fits, the operation fails explicitly.
 
 ## Dependencies
 
-- **`qr`** — 0-dependency QR encoder + decoder
-- **`cross-image`** — Pure JS image decoder (no native deps)
+- **`qr`** — QR module generation and primary QR decoding.
+- **`fast-png`** — packed 1-bit PNG encoding and decoding.
+- **`cross-image`** — image decoding and preparation.
+- **`jsqr`** — fallback QR decoding for difficult images.
+- **`@cwasm/webp`** — WebP decoding fallback.
 
 ## License
 
 MIT
-
-## Text and decoding limits
-
-Generate directly with `atomizeQr('', { text: 'Hello 🌍' })` or
-`qr-atomize --text 'Hello 🌍'`. Image inputs must contain supported UTF-8 text.
-Unmarked byte segments are assumed to be UTF-8; invalid UTF-8 and explicit
-non-UTF-8 ECI encodings fail rather than silently changing the text. Arbitrary
-binary payloads are unsupported. Re-encoding preserves text, not the original
-module pattern or encoding metadata.
-
-Encoding tries medium error correction, then low if the payload exceeds medium
-capacity. Output uses one pixel per module. The compact default border is two;
-use `border: 4` (CLI `--border 4`) for a standards-conformant quiet zone.
-CLI `--format raw` writes a JSON matrix; `--quiet` suppresses success output.
-Use `format: 'gif'` or CLI `--format gif` for GIF output. PNG was consistently
-smaller than this GIF encoder in our measurements. Lossless WebP was smaller
-still in those samples, but is currently an input format, not an output option.
-
-`invert: true` or CLI `--invert` swaps output polarity relative to the input;
-otherwise input polarity is preserved. The decoder uses jsQR as a fallback for
-difficult images and a WebP fallback for formats cross-image cannot decode.
-Named exports `decodeInput` and `reEncode` remain available. `decodeInput` returns
-RGBA image data; `reEncode(text, { border, format, invert })` renders text.
